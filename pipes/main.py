@@ -4,6 +4,11 @@ from django.conf import settings
 
 import urllib
 
+if hasattr(settings, "PIPES_CACHE_EXPIRY"):
+    cache_expiry = settings.PIPES_CACHE_EXPIRY
+else:
+    cache_expiry = 60
+
 class PipeResultSet(list):
     """all() and filter() calls on the PipeManager class return an instance of this class."""
     def __init__(self, pipe_cls, items):
@@ -66,7 +71,7 @@ class PipeManager(object):
             else: # Not found in cache
                 _log("Not found in cache. Downloading...")
                 resp = urllib.urlopen(url_string).read()
-                cache.set(url_string.replace(" ",''), resp, settings.PIPES_CACHE_EXPIRY)
+                cache.set(url_string.replace(" ",''), resp, cache_expiry)
             resp_obj = simplejson.loads(resp)
             return PipeResultSet(self.pipe, resp_obj)
         else:

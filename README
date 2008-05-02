@@ -1,0 +1,7 @@
+django-pipes
+
+This module offers an abstraction layer over remote JSON data. It is inspired
+by Ruby on Rails' ActiveResource library.
+
+Author: Harish Mallipeddi
+Email: harish.mallipeddi@gmail.com

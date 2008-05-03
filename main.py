@@ -10,19 +10,19 @@ else:
     cache_expiry = 60
 
 class PipeResultSet(list):
-    """all() and filter() calls on the PipeManager class return an instance of this class."""
+    """all() and filter() on the PipeManager class return an instance of this class."""
     def __init__(self, pipe_cls, items):
         super(PipeResultSet, self).__init__(self)
         if isinstance(items, dict) and hasattr(pipe_cls, '__call__'):
             obj = pipe_cls.__call__()
-            obj.__dict__.update(_objectify_json(items))
+            obj.items.update(_objectify_json(items))
             self.append(obj)
         elif isinstance(items, list):
             for item in items:
                 if isinstance(item, dict) and hasattr(pipe_cls, '__call__'):
                     # let's go ahead and create instances of the user-defined Pipe class
                     obj = pipe_cls.__call__()
-                    obj.__dict__.update(_objectify_json(item))
+                    obj.items.update(_objectify_json(item))
                     self.append(obj)
         else:
             self.append(items)
@@ -32,7 +32,6 @@ def _objectify_json(i):
         transformed_dict = JSONDict()
         for key, val in i.iteritems():
             transformed_dict[key] = i[key] = _objectify_json(val)
-        transformed_dict.__dict__.update(i)
         return transformed_dict
     elif isinstance(i, list):
         for idx in range(len(i)):
@@ -44,7 +43,11 @@ def _log(msg):
         print msg
 
 class JSONDict(dict):
-    pass
+    def __getattr__(self, attrname):
+        if self.has_key(attrname):
+            return self[attrname]
+        else:
+            raise AttributeError
 
 class PipeManager(object):
     """
@@ -114,7 +117,14 @@ class Pipe(object):
     
     __metaclass__ = PipeBase
     uri = None
+    items = dict()
     
     def add_to_class(cls, name, value):
         setattr(cls, name, value)
     add_to_class = classmethod(add_to_class)
+
+    def __getattr__(self, attrname):
+        if self.items.has_key(attrname):
+            return self.items[attrname]
+        else:
+            raise AttributeError

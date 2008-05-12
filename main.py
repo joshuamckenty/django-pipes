@@ -94,7 +94,6 @@ class PipeBase(type):
     """Metaclass for all pipes"""
     def __new__(cls, name, bases, attrs):
         # If this isn't a subclass of Pipe, don't do anything special.
-        
         try:
             if not filter(lambda b: issubclass(b, Pipe), bases):
                 return super(PipeBase, cls).__new__(cls, name, bases, attrs)
@@ -117,7 +116,9 @@ class Pipe(object):
     
     __metaclass__ = PipeBase
     uri = None
-    items = dict()
+    
+    def __init__(self):
+        self.items = dict()
     
     def add_to_class(cls, name, value):
         setattr(cls, name, value)

@@ -125,7 +125,11 @@ class Pipe(object):
     add_to_class = classmethod(add_to_class)
 
     def __getattr__(self, attrname):
-        if self.items.has_key(attrname):
+        if attrname == '__setstate__':
+            # when you unpickle a Pipe object, __getattr__ gets called
+            # before the constructor
+            raise AttributeError
+        elif self.items.has_key(attrname):
             return self.items[attrname]
         else:
             raise AttributeError

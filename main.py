@@ -2,7 +2,9 @@ from django.utils import simplejson
 from django.core.cache import cache
 from django.conf import settings
 
-import urllib
+import urllib, urllib2
+
+from exceptions import ObjectNotSavedException
 
 if hasattr(settings, "PIPES_CACHE_EXPIRY"):
     cache_expiry = settings.PIPES_CACHE_EXPIRY
@@ -90,6 +92,24 @@ class PipeManager(object):
     def all(self):
         return self.filter({})
 
+    def _save(self, obj):
+        "Makes a POST request to the given URI with the POST params set to the given object's attributes."
+        if hasattr(self.pipe, 'uri'):
+            url_string = self.pipe.uri
+            post_params = urllib.urlencode(obj.items)
+            _log("Posting to: %s" % url_string)
+            try:
+                resp = urllib2.urlopen(urllib2.Request(url_string, post_params))
+            except urllib2.HTTPError, e:
+                raise ObjectNotSavedException(e.code, resp=e.read())
+            except urllib2.URLError, e:
+                raise ObjectNotSavedException(e.reason[0], reason=e.reason[1])
+            else:
+                resp_obj = simplejson.loads(resp.read())
+                return resp_obj
+        else:
+            return None
+
 class PipeBase(type):
     """Metaclass for all pipes"""
     def __new__(cls, name, bases, attrs):
@@ -117,8 +137,10 @@ class Pipe(object):
     __metaclass__ = PipeBase
     uri = None
     
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.items = dict()
+        if len(kwargs) > 0:
+            self.items.update(kwargs)
     
     def add_to_class(cls, name, value):
         setattr(cls, name, value)
@@ -127,9 +149,22 @@ class Pipe(object):
     def __getattr__(self, attrname):
         if attrname == '__setstate__':
             # when you unpickle a Pipe object, __getattr__ gets called
-            # before the constructor
+            # before the constructor is called
+            # this will result in a recursive loop since self.items won't be available yet.
             raise AttributeError
         elif self.items.has_key(attrname):
             return self.items[attrname]
         else:
             raise AttributeError
+    
+    def __setattr__(self, attrname, attrval):
+        if attrname == 'items':
+            # items is the only attribute which should be set as a regular instance attribute.
+            object.__setattr__(self, attrname, attrval)
+        else:
+            # for all other attributes, just insert them into the items dict.
+            self.items[attrname] = attrval
+
+    def save(self):
+        "Makes a POST request to the given URI with the POST params set to the class's attributes."
+        return self.objects._save(self)

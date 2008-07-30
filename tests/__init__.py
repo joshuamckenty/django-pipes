@@ -4,9 +4,9 @@ def setup():
     class HTTPThread(threading.Thread):
         def run(self):
             from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+            from urlparse import urlparse
             class TestHTTPRequestHandler(BaseHTTPRequestHandler):
                 def do_GET(self):
-                    from urlparse import urlparse
                     parts = urlparse(self.path)
                     query = parts[2]
                     params = [param.split("=") for param in parts[4].split("&")]
@@ -28,6 +28,11 @@ def setup():
                             self.wfile.write("")
                     else:
                         self.wfile.write("")
+                def do_POST(self):
+                    parts = urlparse(self.path)
+                    query = parts[2]
+                    self.wfile.write(simplejson.dumps("success"))
+            
             HTTPServer(('localhost',9090), TestHTTPRequestHandler).serve_forever()
     t = HTTPThread()
     t.setDaemon(True)

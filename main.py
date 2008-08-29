@@ -5,6 +5,7 @@ from django.conf import settings
 import urllib, urllib2
 
 from exceptions import ObjectNotSavedException
+from pipes import debug_stats
 
 if hasattr(settings, "PIPES_CACHE_EXPIRY"):
     cache_expiry = settings.PIPES_CACHE_EXPIRY
@@ -69,14 +70,19 @@ class PipeManager(object):
             if len(params)>0:
                 url_string += "?%s" % urllib.urlencode(params)
             _log("Fetching: %s" % url_string)
+            url_string = url_string.replace(" ",'')
+            
             # Try the cache first
             resp = cache.get(url_string)
             if resp: # Yay! found in cache!
                 _log("Found in cache.")
+                debug_stats.record_query(url=url_string, found_in_cache=True)
             else: # Not found in cache
                 _log("Not found in cache. Downloading...")
                 resp = urllib.urlopen(url_string).read()
-                cache.set(url_string.replace(" ",''), resp, cache_expiry)
+                cache.set(url_string, resp, cache_expiry)
+                debug_stats.record_query(url=url_string, found_in_cache=False)
+
             resp_obj = simplejson.loads(resp)
             return PipeResultSet(self.pipe, resp_obj)
         else:

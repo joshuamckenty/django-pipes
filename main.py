@@ -4,7 +4,7 @@ from django.conf import settings
 
 import urllib, urllib2
 
-from exceptions import ObjectNotSavedException
+from exceptions import ObjectNotSavedException, ResourceNotAvailableException
 from pipes import debug_stats
 
 if hasattr(settings, "PIPES_CACHE_EXPIRY"):
@@ -74,14 +74,26 @@ class PipeManager(object):
             
             # Try the cache first
             resp = cache.get(url_string)
-            if resp: # Yay! found in cache!
+            if resp: 
+                # Yay! found in cache!
                 _log("Found in cache.")
-                debug_stats.record_query(url=url_string, found_in_cache=True)
-            else: # Not found in cache
+                debug_stats.record_query(url_string, found_in_cache=True)
+            else: 
+                # Not found in cache
                 _log("Not found in cache. Downloading...")
-                resp = urllib.urlopen(url_string).read()
+                
+                try:
+                    respObj = urllib2.urlopen(url_string)
+                except urllib2.HTTPError, e:
+                    debug_stats.record_query(url_string, failed=True)
+                    raise ResourceNotAvailableException(e.code, resp=e.read())
+                except urllib2.URLError, e:
+                    debug_stats.record_query(url_string, failed=True)
+                    raise ResourceNotAvailableException(e.reason[0], reason=e.reason[1])
+                
+                resp = respObj.read()
                 cache.set(url_string, resp, cache_expiry)
-                debug_stats.record_query(url=url_string, found_in_cache=False)
+                debug_stats.record_query(url_string)
 
             resp_obj = simplejson.loads(resp)
             return PipeResultSet(self.pipe, resp_obj)
@@ -172,5 +184,8 @@ class Pipe(object):
             self.items[attrname] = attrval
 
     def save(self):
-        "Makes a POST request to the given URI with the POST params set to the class's attributes."
+        """
+        Makes a POST request to the given URI with the POST params set to the class's attributes.
+        Throws a ObjectNotSavedException if the request fails.
+        """
         return self.objects._save(self)

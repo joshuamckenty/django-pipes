@@ -1,0 +1,15 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+    "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <title>DEMO of django-pipes</title>
+</head>
+<body>
+    <h1>Search results for {{ q }}</h1>
+    <ul>
+        {% for result in results %}
+        <li><a href="{{ result.unescapedUrl }}">{{ result.title|safe }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

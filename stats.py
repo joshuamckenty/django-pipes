@@ -14,7 +14,7 @@ class PipesStats(local):
         self.queries.append({
             'url':url,
             'found_in_cache':found_in_cache,
-            'success':not failed,
+            'failed':failed,
         })
 
     def reset(self):

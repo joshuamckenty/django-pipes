@@ -8,6 +8,9 @@ class FemaleProgrammer(pipes.Pipe):
     "This resource does not exist on the server."
     uri = "http://localhost:9091/nonexistent/"
 
+class TimesOut(pipes.Pipe):
+    uri = "http://localhost:9090/timeout/"
+
 def test_two_pipes_of_same_kind_with_different_params():
     "Two pipes of the same kind but filtered by different params should give back different result sets."
     b1 = Book.objects.get({'id':1})
@@ -24,6 +27,15 @@ def test_fetch_nonexistent_resource():
         chick1 = FemaleProgrammer.objects.get({'id':1})
     except pipes.ResourceNotAvailableException, e:
         assert True
+    else:
+        assert False
+
+def test_fetch_timeout():
+    try:
+        TimesOut.objects.all()
+    except pipes.ResourceNotAvailableException, e:
+        import socket
+        assert hasattr(e, 'reason') and type(e.reason) == socket.timeout
     else:
         assert False
 

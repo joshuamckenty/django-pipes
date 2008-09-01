@@ -82,3 +82,6 @@ INSTALLED_APPS = (
     'pipes',
     'pipes_sample.search',
 )
+
+# "pipes"-specific settings
+PIPES_SOCKET_TIMEOUT = 3

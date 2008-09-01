@@ -1,7 +1,11 @@
 #! /usr/bin/env python
-from django.utils import simplejson
+
+import time
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from urlparse import urlparse
+
+from django.utils import simplejson
+
 class TestHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         parts = urlparse(self.path)
@@ -23,6 +27,9 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
                 )
             else:
                 self.wfile.write("")
+        elif query == "/timeout/":
+            time.sleep(4)
+            self.wfile.write("")
         else:
             self.wfile.write("")
     def do_POST(self):

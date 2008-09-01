@@ -2,7 +2,7 @@ from django.utils import simplejson
 from django.core.cache import cache
 from django.conf import settings
 
-import urllib, urllib2
+import urllib, urllib2, socket
 
 from exceptions import ObjectNotSavedException, ResourceNotAvailableException
 from pipes import debug_stats
@@ -11,6 +11,12 @@ if hasattr(settings, "PIPES_CACHE_EXPIRY"):
     cache_expiry = settings.PIPES_CACHE_EXPIRY
 else:
     cache_expiry = 60
+
+# set default socket timeout
+if hasattr(settings, "PIPES_SOCKET_TIMEOUT"):
+    socket.setdefaulttimeout(settings.PIPES_SOCKET_TIMEOUT)
+else:
+    socket.setdefaulttimeout(10)
 
 class PipeResultSet(list):
     """all() and filter() on the PipeManager class return an instance of this class."""
@@ -86,10 +92,10 @@ class PipeManager(object):
                     respObj = urllib2.urlopen(url_string)
                 except urllib2.HTTPError, e:
                     debug_stats.record_query(url_string, failed=True)
-                    raise ResourceNotAvailableException(e.code, resp=e.read())
+                    raise ResourceNotAvailableException(code=e.code, resp=e.read())
                 except urllib2.URLError, e:
                     debug_stats.record_query(url_string, failed=True)
-                    raise ResourceNotAvailableException(e.reason[0], reason=e.reason[1])
+                    raise ResourceNotAvailableException(reason=e.reason)
                 
                 resp = respObj.read()
                 cache.set(url_string, resp, cache_expiry)
@@ -119,9 +125,9 @@ class PipeManager(object):
             try:
                 resp = urllib2.urlopen(urllib2.Request(url_string, post_params))
             except urllib2.HTTPError, e:
-                raise ObjectNotSavedException(e.code, resp=e.read())
+                raise ObjectNotSavedException(code=e.code, resp=e.read())
             except urllib2.URLError, e:
-                raise ObjectNotSavedException(e.reason[0], reason=e.reason[1])
+                raise ObjectNotSavedException(reason=e.reason)
             else:
                 resp_obj = simplejson.loads(resp.read())
                 return resp_obj

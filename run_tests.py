@@ -2,7 +2,7 @@
 if __name__ == "__main__":
     import os
     if "DJANGO_SETTINGS_MODULE" not in os.environ:
-        parser.error("Environment variable DJANGO_SETTINGS_MODULE is not set. Set it to a test project to run the tests.")
-        sys.exit(0)
+        print "Using pipes_sample as the test Django project..."
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'pipes_sample.settings'
     import nose
     nose.main()

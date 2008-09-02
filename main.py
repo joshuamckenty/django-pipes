@@ -12,7 +12,7 @@ if hasattr(settings, "PIPES_CACHE_EXPIRY"):
 else:
     cache_expiry = 60
 
-# set default socket timeout
+# set default socket timeout; otherwise urllib2 requests could block forever.
 if hasattr(settings, "PIPES_SOCKET_TIMEOUT"):
     socket.setdefaulttimeout(settings.PIPES_SOCKET_TIMEOUT)
 else:
@@ -70,8 +70,17 @@ class PipeManager(object):
     def _set_pipe(self, pipe):
         self.pipe = pipe
 
-    def filter(self, params={}):
+    def filter(self, params={}, should_cache=None):
         if hasattr(self.pipe, 'uri'):
+            
+            # should cache or not?
+            if should_cache is None:
+                # no per-request caching specified; lets look for cache option on the Pipe class
+                if hasattr(self.pipe, 'should_cache'):
+                    should_cache = self.pipe.should_cache
+                else:
+                    should_cache = True
+            
             url_string = self.pipe.uri
             if len(params)>0:
                 url_string += "?%s" % urllib.urlencode(params)
@@ -98,7 +107,8 @@ class PipeManager(object):
                     raise ResourceNotAvailableException(reason=e.reason)
                 
                 resp = respObj.read()
-                cache.set(url_string, resp, cache_expiry)
+                if should_cache:
+                    cache.set(url_string, resp, cache_expiry)
                 debug_stats.record_query(url_string)
 
             resp_obj = simplejson.loads(resp)
@@ -106,15 +116,15 @@ class PipeManager(object):
         else:
             return PipeResultSet(self.pipe, [])
 
-    def get(self, params={}):
-        rs = self.filter(params)
+    def get(self, params={}, should_cache=None):
+        rs = self.filter(params, should_cache)
         if rs:
             return rs[0]
         else:
             return None
 
-    def all(self):
-        return self.filter({})
+    def all(self, should_cache=None):
+        return self.filter({}, should_cache)
 
     def _save(self, obj):
         "Makes a POST request to the given URI with the POST params set to the given object's attributes."

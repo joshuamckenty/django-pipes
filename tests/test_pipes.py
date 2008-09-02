@@ -1,6 +1,7 @@
 import pipes
 from django.core.cache import cache
 
+# models
 class Book(pipes.Pipe):
     uri = "http://localhost:9090/book/"
 
@@ -11,6 +12,11 @@ class FemaleProgrammer(pipes.Pipe):
 class TimesOut(pipes.Pipe):
     uri = "http://localhost:9090/timeout/"
 
+class BookNotCached(pipes.Pipe):
+    uri = "http://localhost:9090/book/"
+    should_cache = False # default = True
+
+# tests
 def test_two_pipes_of_same_kind_with_different_params():
     "Two pipes of the same kind but filtered by different params should give back different result sets."
     b1 = Book.objects.get({'id':1})
@@ -56,3 +62,38 @@ def test_pipes_debug_stats():
     query2 = queries[1]
     assert query2['url'] == "http://localhost:9090/book/?id=1"
     assert query2['found_in_cache'] == True
+
+def test_pipe_level_caching_option():
+    "if the pipe-level caching option is set to False, then it should override the default value of True"
+    # clean up
+    pipes.debug_stats.reset()
+    cache.delete("http://localhost:9090/book/?id=1")
+    
+    # fetch the book with id = 1
+    b1 = BookNotCached.objects.get({'id':1})
+    queries = pipes.debug_stats.queries
+    query1 = queries[0]
+    assert query1['found_in_cache'] == False
+    
+    # fetch the book with id = 1 again; should not be fetched from cache
+    b2 = BookNotCached.objects.get({'id':1})
+    query2 = queries[1]
+    assert query2['found_in_cache'] == False
+
+def test_request_level_caching_option():
+    "if caching is defined at request-level, it should override global default or pipe-level caching if any"
+
+    # clean up stuff from previous tests
+    pipes.debug_stats.reset()
+    cache.delete("http://localhost:9090/book/?id=1")
+
+    # override global default
+    b1 = Book.objects.get({'id':1}, should_cache=False)
+    b1 = Book.objects.get({'id':1}, should_cache=False)
+    queries = pipes.debug_stats.queries
+    assert queries[1]['found_in_cache'] == False
+    
+    # override pipes-level default
+    nb1 = BookNotCached.objects.get({'id':1}, should_cache=True)
+    nb1 = BookNotCached.objects.get({'id':1})
+    assert queries[3]['found_in_cache'] == True

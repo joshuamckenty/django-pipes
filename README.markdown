@@ -7,5 +7,4 @@ Author: *Harish Mallipeddi* (harish.mallipeddi@gmail.com)
 
 ## TODO ##
 
-* Better stats - time taken for request, total time spent in pipes.
 * Supporting the remaining HTTP verbs - PUT, DELETE.

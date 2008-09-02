@@ -3,6 +3,7 @@ from django.core.cache import cache
 from django.conf import settings
 
 import urllib, urllib2, socket
+from time import time
 
 from exceptions import ObjectNotSavedException, ResourceNotAvailableException
 from pipes import debug_stats
@@ -96,12 +97,14 @@ class PipeManager(object):
             _log("Fetching: %s" % url_string)
             url_string = url_string.replace(" ",'')
             
+            start = time()
             # Try the cache first
             resp = cache.get(url_string)
             if resp: 
                 # Yay! found in cache!
                 _log("Found in cache.")
-                debug_stats.record_query(url_string, found_in_cache=True)
+                stop = time()
+                debug_stats.record_query(url_string, found_in_cache=True, time=stop-start)
             else: 
                 # Not found in cache
                 _log("Not found in cache. Downloading...")
@@ -113,19 +116,23 @@ class PipeManager(object):
                         respObj = urllib2.urlopen(url_string)
                         break
                     except urllib2.HTTPError, e:
-                        debug_stats.record_query(url_string, failed=True, retries=attempts-1)
+                        stop = time()
+                        debug_stats.record_query(url_string, failed=True, retries=attempts-1, time=stop-start)
                         raise ResourceNotAvailableException(code=e.code, resp=e.read())
                     except urllib2.URLError, e:
                         if attempts <= retries:
                             continue
+                            t1 = time() # reset time
                         else: 
-                            debug_stats.record_query(url_string, failed=True, retries=attempts-1)
+                            stop = time()
+                            debug_stats.record_query(url_string, failed=True, retries=attempts-1, time=stop-start)
                             raise ResourceNotAvailableException(reason=e.reason)
                         
                 resp = respObj.read()
                 if should_cache:
                     cache.set(url_string, resp, cache_expiry)
-                debug_stats.record_query(url_string, retries=attempts-1)
+                stop = time()
+                debug_stats.record_query(url_string, retries=attempts-1, time=stop-start)
 
             resp_obj = simplejson.loads(resp)
             return PipeResultSet(self.pipe, resp_obj)

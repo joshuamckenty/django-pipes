@@ -11,11 +11,12 @@ class PipesStatsMiddleware:
             if len(queries) > 0:
                 cached_queries = filter(lambda query: query['found_in_cache'], queries)
                 failed_queries = filter(lambda query: query['failed'], queries)
+                remote_queries = len(queries) - len(cached_queries) - len(failed_queries)
             
                 print "\n================== Pipes Usage Summary ==========================="
                 print "Total: %d   Found in cache: %d   Fetched from remote: %d   Failed: %d\n" % (
                         len(queries), len(cached_queries),
-                        len(queries) - len(cached_queries) - len(failed_queries), len(failed_queries)
+                        remote_queries, len(failed_queries)
                     )
                 for idx, query in enumerate(queries):
                     if query['failed']:
@@ -24,7 +25,13 @@ class PipesStatsMiddleware:
                         status = "FETCHED FROM CACHE"
                     else:
                         status = "FETCHED FROM REMOTE"
-                    print "%d) %s : %s : %d retries" % (idx+1, status, query['url'], query['retries'])
+                    print "%d) %s (%.3f ms) : %s : %d retries" % (
+                            idx+1, 
+                            status,
+                            query['time'], 
+                            query['url'], 
+                            query['retries']
+                    )
                 print "====================================================================\n"
         
         return response

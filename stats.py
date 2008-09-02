@@ -6,16 +6,17 @@ except ImportError:
     from django.utils._threading_local import local
 
 class PipesStats(local):
-    'Collect per-HTTPRequest stats wrt pipes calls.'
+    'Collect per-request stats for pipes calls.'
     def __init__(self):
         self.queries = []
     
-    def record_query(self, url, found_in_cache=False, failed=False, retries=0):
+    def record_query(self, url, found_in_cache=False, failed=False, retries=0, time=None):
         self.queries.append({
             'url':url,
             'found_in_cache':found_in_cache,
             'failed':failed,
             'retries':retries,
+            'time':time,
         })
 
     def reset(self):

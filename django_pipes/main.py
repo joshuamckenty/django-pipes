@@ -6,7 +6,7 @@ import urllib, urllib2, socket
 from time import time
 
 from exceptions import ObjectNotSavedException, ResourceNotAvailableException
-from pipes import debug_stats
+from django_pipes import debug_stats
 
 if hasattr(settings, "PIPES_CACHE_EXPIRY"):
     cache_expiry = settings.PIPES_CACHE_EXPIRY

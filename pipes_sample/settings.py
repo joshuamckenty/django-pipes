@@ -62,7 +62,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
-    'pipes.middleware.PipesStatsMiddleware',
+    'django_pipes.middleware.PipesStatsMiddleware',
 )
 
 ROOT_URLCONF = 'pipes_sample.urls'
@@ -71,7 +71,7 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    "/Users/harish/Code/Python/DjangoProjects/pipes/pipes_sample/templates",
+    "/Users/harish/Code/Python/DjangoProjects/pipes_sample/templates",
 )
 
 INSTALLED_APPS = (
@@ -79,7 +79,7 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'pipes',
+    'django_pipes',
     'pipes_sample.search',
 )
 

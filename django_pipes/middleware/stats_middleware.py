@@ -1,6 +1,6 @@
 from django.conf import settings
 
-import pipes
+import django_pipes as pipes
 
 class PipesStatsMiddleware:
     def process_response(self, request, response):

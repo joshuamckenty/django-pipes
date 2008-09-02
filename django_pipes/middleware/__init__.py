@@ -1,0 +1,1 @@
+from django_pipes.middleware.stats_middleware import PipesStatsMiddleware

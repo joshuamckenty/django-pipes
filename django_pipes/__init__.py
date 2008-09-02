@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core import signals
 
-from pipes.stats import PipesStats
+from django_pipes.stats import PipesStats
 debug_stats = PipesStats()
 
 # Register an event that resets pipes debug_stats.queries
@@ -10,7 +10,7 @@ def reset_pipes_queries(**kwargs):
     debug_stats.queries = []
 signals.request_started.connect(reset_pipes_queries)
 
-from pipes.main import Pipe, PipeManager, ObjectNotSavedException, ResourceNotAvailableException
+from django_pipes.main import Pipe, PipeManager, ObjectNotSavedException, ResourceNotAvailableException
 
 __all__ = ('Pipe', 'PipeManager')
 

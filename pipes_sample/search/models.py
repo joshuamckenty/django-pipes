@@ -1,5 +1,5 @@
 from django.db import models
-import pipes
+import django_pipes as pipes
 
 # Create your models here.
 class GoogleSearch(pipes.Pipe):

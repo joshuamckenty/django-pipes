@@ -1,4 +1,4 @@
-import pipes
+import django_pipes as pipes
 from django.core.cache import cache
 
 

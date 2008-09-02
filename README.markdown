@@ -5,6 +5,6 @@ This module offers a nice API to access remote JSON resources from within your D
 
 Author: *Harish Mallipeddi* (harish.mallipeddi@gmail.com)
 
-## TODO ##
+### NOTE ###
 
-* Supporting the remaining HTTP verbs - PUT, DELETE.
+* `pipes` has been renamed to `django_pipes` because `pipes` conflicts with a module's name that ships with the Python distribution by default. You could do something like `import django_pipes as pipes` in your code.

@@ -1,11 +1,12 @@
 import pipes
 from django.core.cache import cache
 
+
 # models
 class Book(pipes.Pipe):
     uri = "http://localhost:9090/book/"
 
-class FemaleProgrammer(pipes.Pipe):
+class Nada(pipes.Pipe):
     "This resource does not exist on the server."
     uri = "http://localhost:9091/nonexistent/"
 
@@ -15,6 +16,10 @@ class TimesOut(pipes.Pipe):
 class BookNotCached(pipes.Pipe):
     uri = "http://localhost:9090/book/"
     should_cache = False # default = True
+
+class Flaky(pipes.Pipe):
+    uri = "http://localhost:9091/nonexistent/"
+    retries = 1
 
 # tests
 def test_two_pipes_of_same_kind_with_different_params():
@@ -30,7 +35,7 @@ def test_POST_request():
 
 def test_fetch_nonexistent_resource():
     try:
-        chick1 = FemaleProgrammer.objects.get({'id':1})
+        nada = Nada.objects.get({'id':1})
     except pipes.ResourceNotAvailableException, e:
         assert True
     else:
@@ -97,3 +102,21 @@ def test_request_level_caching_option():
     nb1 = BookNotCached.objects.get({'id':1}, should_cache=True)
     nb1 = BookNotCached.objects.get({'id':1})
     assert queries[3]['found_in_cache'] == True
+
+def test_retries():
+    "if fetching fails, should retry."
+    
+    pipes.debug_stats.reset()
+    queries = pipes.debug_stats.queries
+    
+    # override global default
+    try:
+        f = Flaky.objects.all()
+    except pipes.ResourceNotAvailableException, e:
+        assert queries[0]['retries'] == 1
+
+    # override pipes-level default
+    try:
+        f = Flaky.objects.all(retries=2)
+    except pipes.ResourceNotAvailableException, e:
+        assert queries[1]['retries'] == 2

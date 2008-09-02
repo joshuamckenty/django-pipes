@@ -7,6 +7,5 @@ Author: *Harish Mallipeddi* (harish.mallipeddi@gmail.com)
 
 ## TODO ##
 
-* Retry URLs upon failure.
-* Better stats - time taken for request, total time taken.
+* Better stats - time taken for request, total time spent in pipes.
 * Supporting the remaining HTTP verbs - PUT, DELETE.

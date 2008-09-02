@@ -63,14 +63,15 @@ class PipeManager(object):
     Manager class for pipes. Provides the same semantics as Django's ORM Manager class.
     Currently only all(), get() and filter() are implemented.
     
-    get() & filter() take in params, a dict of key,val pairs which are encoded into HTTP GET params
-    and appended to the URI provided on the Pipe class.
-    
+    get() & filter() accept:
+        params - a dict of (key,value) pairs which are encoded into HTTP GET params 
+                 and appended to the URI provided on the Pipe class.
+        should_cache - should response be cached after fetching?
     """
     def _set_pipe(self, pipe):
         self.pipe = pipe
 
-    def filter(self, params={}, should_cache=None):
+    def filter(self, params, should_cache=None, retries=None):
         if hasattr(self.pipe, 'uri'):
             
             # should cache or not?
@@ -80,6 +81,14 @@ class PipeManager(object):
                     should_cache = self.pipe.should_cache
                 else:
                     should_cache = True
+            
+            # how many retries?
+            if retries is None:
+                # no per-request retries configured; lets look for retries option on the Pipe class
+                if hasattr(self.pipe, 'retries'):
+                    retries = self.pipe.retries
+                else:
+                    retries = 0
             
             url_string = self.pipe.uri
             if len(params)>0:
@@ -97,34 +106,41 @@ class PipeManager(object):
                 # Not found in cache
                 _log("Not found in cache. Downloading...")
                 
-                try:
-                    respObj = urllib2.urlopen(url_string)
-                except urllib2.HTTPError, e:
-                    debug_stats.record_query(url_string, failed=True)
-                    raise ResourceNotAvailableException(code=e.code, resp=e.read())
-                except urllib2.URLError, e:
-                    debug_stats.record_query(url_string, failed=True)
-                    raise ResourceNotAvailableException(reason=e.reason)
-                
+                attempts = 0
+                while True:
+                    try:
+                        attempts += 1
+                        respObj = urllib2.urlopen(url_string)
+                        break
+                    except urllib2.HTTPError, e:
+                        debug_stats.record_query(url_string, failed=True, retries=attempts-1)
+                        raise ResourceNotAvailableException(code=e.code, resp=e.read())
+                    except urllib2.URLError, e:
+                        if attempts <= retries:
+                            continue
+                        else: 
+                            debug_stats.record_query(url_string, failed=True, retries=attempts-1)
+                            raise ResourceNotAvailableException(reason=e.reason)
+                        
                 resp = respObj.read()
                 if should_cache:
                     cache.set(url_string, resp, cache_expiry)
-                debug_stats.record_query(url_string)
+                debug_stats.record_query(url_string, retries=attempts-1)
 
             resp_obj = simplejson.loads(resp)
             return PipeResultSet(self.pipe, resp_obj)
         else:
             return PipeResultSet(self.pipe, [])
 
-    def get(self, params={}, should_cache=None):
-        rs = self.filter(params, should_cache)
+    def get(self, params={}, should_cache=None, retries=None):
+        rs = self.filter(params, should_cache, retries)
         if rs:
             return rs[0]
         else:
             return None
 
-    def all(self, should_cache=None):
-        return self.filter({}, should_cache)
+    def all(self, should_cache=None, retries=None):
+        return self.filter({}, should_cache, retries)
 
     def _save(self, obj):
         "Makes a POST request to the given URI with the POST params set to the given object's attributes."

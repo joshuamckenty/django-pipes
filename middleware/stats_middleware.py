@@ -22,6 +22,6 @@ class PipesStatsMiddleware:
                     status = "FETCHED FROM CACHE"
                 else:
                     status = "FETCHED FROM REMOTE"
-                print "%d: %s : %s" % (idx, status, query['url'])
+                print "%d) %s : %s : %d retries" % (idx+1, status, query['url'], query['retries'])
             print "====================================================================\n"
         return response

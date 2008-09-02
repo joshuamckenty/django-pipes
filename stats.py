@@ -10,11 +10,12 @@ class PipesStats(local):
     def __init__(self):
         self.queries = []
     
-    def record_query(self, url, found_in_cache=False, failed=False):
+    def record_query(self, url, found_in_cache=False, failed=False, retries=0):
         self.queries.append({
             'url':url,
             'found_in_cache':found_in_cache,
             'failed':failed,
+            'retries':retries,
         })
 
     def reset(self):
